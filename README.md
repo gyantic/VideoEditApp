@@ -54,6 +54,8 @@ finalize_upload API で結合＆FFmpeg 処理 → 結果をダウンロード形
 - 全チャンク送信後 /finalize_upload を呼んでサーバーで動画結合 & 変換
 - 結果ファイルを Blob として受け取り、ダウンロード
 - 処理状況もページ下部に表示
+
+  
   ![スクリーンショット 2025-01-23 011539](https://github.com/user-attachments/assets/7a1aef3b-41d5-4e72-9d20-8e3377def90d)
 
   ![image](https://github.com/user-attachments/assets/792215ff-f43f-466a-8272-b9e6735bb617)
