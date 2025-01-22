@@ -2,7 +2,7 @@ import os
 import uuid
 import logging
 import ffmpeg
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -10,17 +10,21 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 app = Flask(__name__)
 CORS(app)  # 必要に応じてCORS許可
 
-#エンドポイント設定(ルーティング)
-@app.route("/")
-def index():
-    # server.py と同じディレクトリにある index.html を返す
-    return send_file(os.path.join(os.path.dirname(__file__), "templates/index.html"))
+
 
 UPLOAD_DIR = 'uploads'
 PROCESSED_DIR = 'processed_files'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
+# 必要パラメータの定義
+REQUIRED_PARAMS = {
+    "change_resolution": ["width", "height"],
+    "change_aspect_ratio": ["aspect_ratio"],
+    "create_gif": ["start_time", "duration"],
+    "create_webm": ["start_time", "duration"],
+    # 'compress' と 'extract_audio' は追加パラメータ不要
+}
 
 # チャンクアップロードAPI
 
@@ -189,6 +193,11 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
 
     logging.info(f"FFmpeg done: {operation}, output={output_path}")
     return output_path
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 
 if __name__ == "__main__":
