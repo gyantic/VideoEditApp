@@ -14,7 +14,7 @@ CORS(app)  # 必要に応じてCORS許可
 @app.route("/")
 def index():
     # server.py と同じディレクトリにある index.html を返す
-    return send_file(os.path.join(os.path.dirname(__file__), "index.html"))
+    return send_file(os.path.join(os.path.dirname(__file__), "templates/index.html"))
 
 UPLOAD_DIR = 'uploads'
 PROCESSED_DIR = 'processed_files'
@@ -192,4 +192,4 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)
