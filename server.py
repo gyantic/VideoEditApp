@@ -11,10 +11,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 app = Flask(__name__)
 CORS(app)  # 必要に応じてCORS許可
 
-# 最大リクエストサイズを設定 (例: 100MB)
+# 最大リクエストサイズを設定
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
-# エラーハンドラを追加 (オプション)
+# エラーハンドラを追加
 @app.errorhandler(413)
 def request_entity_too_large(error):
     return jsonify({"status": "error", "message": "Uploaded file is too large"}), 413
@@ -61,9 +61,8 @@ def upload_chunk():
     logging.info(f"Received chunk {chunk_index} for upload_id={upload_id}, size={file_chunk.content_length}")
     return jsonify({"status": "ok", "message": f"chunk {chunk_index} saved"}), 200
 
-########################
-# 2) finalize_upload + ffmpeg処理
-########################
+
+#finalize_upload + ffmpeg処理
 @app.route('/finalize_upload', methods=['POST'])
 def finalize_upload():
     """
@@ -127,7 +126,6 @@ def finalize_upload():
     )
 
 
-
 def process_video(input_path, operation, width=None, height=None, aspect_ratio=None,
                   start_time=None, duration=None):
     """
@@ -147,15 +145,12 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
      # aspect_ratio の値をログに記録
     logging.info(f"Operation: {operation}, aspect_ratio before sanitization: '{aspect_ratio}'")
 
-    '''
+
     # バックスラッシュを除去（もしあれば）
     if aspect_ratio:
         aspect_ratio = aspect_ratio.replace('\\', '').strip()
         logging.info(f"Aspect ratio after sanitization: '{aspect_ratio}'")
-        # 正しい形式か検証
-        if not re.match(r'^\d+:\d+$', aspect_ratio):
-            raise ValueError('aspect_ratio must be in "width:height" format, e.g., "16:9"')
-    '''
+
 
 
     if operation == 'compress':
@@ -178,6 +173,8 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
     elif operation == 'change_aspect_ratio':
         if not aspect_ratio:
             raise ValueError('aspect_ratio required for change_aspect_ratio')
+        if aspect_ratio and ':' in aspect_ratio:
+            aspect_ratio = aspect_ratio.replace(':', '/')  #：だとエラーが出る(//が入る)
         (
             ffmpeg
             .input(input_path)
@@ -208,12 +205,14 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
         (
             ffmpeg
             .input(input_path, ss=start_time, t=duration)
-            .output(output_path, format='webm')
+            .output(output_path, format='webm',
+                    vcodec='libvpx',
+                    acodec='libvorbis',
+                    )
             .run(cmd='/usr/bin/ffmpeg',overwrite_output=True,capture_stdout=True, capture_stderr=True)
         )
     else:
         raise ValueError('Unsupported operation')
-
     logging.info(f"FFmpeg done: {operation}, output={output_path}")
     return output_path
 

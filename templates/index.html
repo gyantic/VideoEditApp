@@ -61,8 +61,8 @@
     const uploadForm = document.getElementById("uploadForm");
     const statusEl = document.getElementById("statusArea");
 
-    // チャンクサイズ(例: 2MB)
-    const CHUNK_SIZE = 2 * 1024 * 1024;
+    // チャンクサイズ 今回は2MBずつ送る
+    const CHUNK_SIZE = 1 * 1024 * 1024;
 
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -75,14 +75,9 @@
       const start_time = document.getElementById("start_time").value;
       const duration = document.getElementById("duration").value;
 
-      if (operation === "change_aspect_ratio") {
-        const aspectRegex = /^\d+:\d+$/;
-        if (!aspectRegex.test(aspect_ratio)) {
-          alert("アスペクト比は '幅:高さ' の形式で入力してください（例: 16:9）。");
-          statusEl.textContent = "アスペクト比の形式が正しくありません。";
-          return;
-        }
-      }
+
+      console.log("aspect_ratio before fetch:", aspect_ratio, JSON.stringify(aspect_ratio));
+
 
       const fileInput = document.getElementById("fileInput");
       if (!fileInput.files.length) {
@@ -104,6 +99,7 @@
       let offset = 0;
       for (let i = 0; i < totalChunks; i++) {
         const chunk = file.slice(offset, offset + CHUNK_SIZE);
+        console.log(`chunk ${i} size:`, chunk.size);
         offset += CHUNK_SIZE;
 
         const fd = new FormData();
@@ -155,11 +151,21 @@
         // バイナリ (blob) として受け取る
         const blob = await res.blob();
 
-        // ダウンロードトリガー
+        // サーバーからのレスポンスヘッダーを取得 = 拡張子の抽出
+        const contentDisposition = res.headers.get("Content-Disposition")
+        if (contentDisposition && contentDisposition.includes("filename=")) {
+          // 正規表現などで filename= に指定された値を取り出す
+          const match = contentDisposition.match(/filename="?([^"]+)"?/);
+          if (match && match[1]) {
+            downloadFilename = match[1];
+          }
+         }
+
+        // ダウンロード
         const downloadUrl = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = downloadUrl;
-        a.download = "converted_" + fileName; // ダウンロードファイル名を指定
+        a.download = downloadFilename; // ダウンロードファイル名を指定
         document.body.appendChild(a);
         a.click();
         a.remove();
