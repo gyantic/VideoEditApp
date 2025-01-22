@@ -10,6 +10,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 app = Flask(__name__)
 CORS(app)  # 必要に応じてCORS許可
 
+# 最大リクエストサイズを設定 (例: 100MB)
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
+
+# エラーハンドラを追加 (オプション)
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({"status": "error", "message": "Uploaded file is too large"}), 413
 
 
 UPLOAD_DIR = 'uploads'
