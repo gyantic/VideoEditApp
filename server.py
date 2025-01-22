@@ -112,7 +112,7 @@ def finalize_upload():
         logging.error(f"FFmpeg Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
-        # 元の結合ファイルは不要なら削除
+        # 元の結合ファイルは不要、削除
         if os.path.exists(merged_path):
             os.remove(merged_path)
 
@@ -142,8 +142,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
     # "processed_{uuid}.ext" の形でファイル名を作成
     output_filename = f"processed_{uuid.uuid4()}{output_ext}"
     output_path = os.path.join(PROCESSED_DIR, output_filename)
-    output_path = PROCESSED_DIR
-
+    
     if operation == 'compress':
         (
             ffmpeg
