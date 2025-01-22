@@ -147,7 +147,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             ffmpeg
             .input(input_path)
             .output(output_path, video_bitrate='500k')
-            .run(overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg', overwrite_output=True)
         )
     elif operation == 'change_resolution':
         if not width or not height:
