@@ -126,6 +126,7 @@ def finalize_upload():
     )
 
 
+
 def process_video(input_path, operation, width=None, height=None, aspect_ratio=None,
                   start_time=None, duration=None):
     """
@@ -183,7 +184,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
         (
             ffmpeg
             .input(input_path, ss=start_time, t=duration)
-            .output(output_path, vf='fps=10,scale=320:-1:flags=lanczos')
+            .output(output_path, format='gif' ,vf='fps=10,scale=320:-1:flags=lanczos')
             .run(overwrite_output=True)
         )
     elif operation == 'create_webm':
