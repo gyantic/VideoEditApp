@@ -142,7 +142,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
     # "processed_{uuid}.ext" の形でファイル名を作成
     output_filename = f"processed_{uuid.uuid4()}{output_ext}"
     output_path = os.path.join(PROCESSED_DIR, output_filename)
-    
+
     if operation == 'compress':
         (
             ffmpeg
@@ -158,7 +158,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             .input(input_path)
             .filter('scale', width, height)
             .output(output_path, format='mp4')
-            .run(overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
         )
     elif operation == 'change_aspect_ratio':
         if not aspect_ratio:
@@ -169,14 +169,14 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             .filter('setsar', '1')
             .filter('setdar', aspect_ratio)
             .output(output_path, format='mp4')
-            .run(overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
         )
     elif operation == 'extract_audio':
         (
             ffmpeg
             .input(input_path)
             .output(output_path, format='mp3', acodec='libmp3lame', ab='192k')
-            .run(overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
         )
     elif operation == 'create_gif':
         if start_time is None or duration is None:
@@ -185,7 +185,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             ffmpeg
             .input(input_path, ss=start_time, t=duration)
             .output(output_path, format='gif' ,vf='fps=10,scale=320:-1:flags=lanczos')
-            .run(overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
         )
     elif operation == 'create_webm':
         if start_time is None or duration is None:
@@ -194,7 +194,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             ffmpeg
             .input(input_path, ss=start_time, t=duration)
             .output(output_path, format='webm')
-            .run(overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
         )
     else:
         raise ValueError('Unsupported operation')
