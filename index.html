@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Chunk Upload + ffmpeg</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+</head>
+<body class="p-4">
+  <div class="container">
+    <h1>分割アップロード + 動画変換デモ</h1>
+
+    <form id="uploadForm" class="mb-3">
+      <div class="mb-3">
+        <label for="operation" class="form-label">操作 (operation):</label>
+        <select id="operation" class="form-select">
+          <option value="compress">compress</option>
+          <option value="change_resolution">change_resolution</option>
+          <option value="change_aspect_ratio">change_aspect_ratio</option>
+          <option value="extract_audio">extract_audio</option>
+          <option value="create_gif">create_gif</option>
+          <option value="create_webm">create_webm</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="width" class="form-label">幅 (width):</label>
+        <input type="number" id="width" class="form-control" />
+      </div>
+      <div class="mb-3">
+        <label for="height" class="form-label">高さ (height):</label>
+        <input type="number" id="height" class="form-control" />
+      </div>
+      <div class="mb-3">
+        <label for="aspect_ratio" class="form-label">アスペクト比 (aspect_ratio):</label>
+        <input type="text" id="aspect_ratio" class="form-control" placeholder="例: 16:9"/>
+      </div>
+      <div class="mb-3">
+        <label for="start_time" class="form-label">開始時間 (秒):</label>
+        <input type="number" step="0.1" id="start_time" class="form-control" />
+      </div>
+      <div class="mb-3">
+        <label for="duration" class="form-label">期間 (秒):</label>
+        <input type="number" step="0.1" id="duration" class="form-control" />
+      </div>
+
+      <div class="mb-3">
+        <label for="file" class="form-label">動画ファイル:</label>
+        <input type="file" id="fileInput" class="form-control" accept="video/mp4,video/*" />
+      </div>
+
+      <button type="submit" class="btn btn-primary">アップロード＆変換実行</button>
+    </form>
+
+    <div id="statusArea" class="text-info mb-3"></div>
+  </div>
+
+  <script>
+    const uploadForm = document.getElementById("uploadForm");
+    const statusEl = document.getElementById("statusArea");
+
+    // チャンクサイズ(例: 2MB)
+    const CHUNK_SIZE = 2 * 1024 * 1024;
+
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // 1. 各種パラメータ取得
+      const operation = document.getElementById("operation").value;
+      const width = document.getElementById("width").value;
+      const height = document.getElementById("height").value;
+      const aspect_ratio = document.getElementById("aspect_ratio").value;
+      const start_time = document.getElementById("start_time").value;
+      const duration = document.getElementById("duration").value;
+
+      const fileInput = document.getElementById("fileInput");
+      if (!fileInput.files.length) {
+        alert("動画ファイルを選択してください");
+        return;
+      }
+      const file = fileInput.files[0];
+      const fileName = file.name;
+      const fileSize = file.size;
+
+      // 2. 分割アップロードの準備
+      const totalChunks = Math.ceil(fileSize / CHUNK_SIZE);
+      // upload_id を一意にする(例: Date.now() + ランダム文字列)
+      const uploadId = Date.now().toString();
+
+      statusEl.textContent = `ファイルサイズ: ${fileSize} bytes, チャンク数: ${totalChunks}`;
+
+      // 3. チャンクの送信処理
+      let offset = 0;
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = file.slice(offset, offset + CHUNK_SIZE);
+        offset += CHUNK_SIZE;
+
+        const fd = new FormData();
+        fd.append("upload_id", uploadId);
+        fd.append("chunk_index", i);
+        fd.append("file_chunk", chunk);
+
+        try {
+          const res = await fetch("http://127.0.0.1:8000/upload_chunk", {
+            method: "POST",
+            body: fd
+          });
+          if (!res.ok) {
+            throw new Error(`upload_chunk failed. status=${res.status}`);
+          }
+          const json = await res.json();
+          console.log("chunk", i, json);
+          statusEl.textContent = `チャンク ${i+1}/${totalChunks} アップロード完了`;
+        } catch (err) {
+          console.error("チャンク送信エラー:", err);
+          statusEl.textContent = `チャンク送信エラー: ${err.message}`;
+          return;
+        }
+      }
+
+      // 4. finalize_upload(チャンクで送った動画の統合) → ffmpeg 変換 → ファイルをバイナリで取得
+      statusEl.textContent = "全チャンク送信完了。変換処理をリクエスト中...";
+
+      const finalizeFd = new FormData();
+      finalizeFd.append("upload_id", uploadId);
+      finalizeFd.append("total_chunks", totalChunks);
+      finalizeFd.append("file_name", fileName);
+      finalizeFd.append("operation", operation);
+      finalizeFd.append("width", width);
+      finalizeFd.append("height", height);
+      finalizeFd.append("aspect_ratio", aspect_ratio);
+      finalizeFd.append("start_time", start_time);
+      finalizeFd.append("duration", duration);
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/finalize_upload", {
+          method: "POST",
+          body: finalizeFd
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`変換エラー: ${errText}`);
+        }
+        // バイナリ (blob) として受け取る
+        const blob = await res.blob();
+
+        // ダウンロードトリガー
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = "converted_" + fileName; // ダウンロードファイル名を指定
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        statusEl.textContent = "変換完了。ダウンロードが行われました。";
+      } catch (err) {
+        console.error("finalize_uploadエラー:", err);
+        statusEl.textContent = "finalize_uploadエラー: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
