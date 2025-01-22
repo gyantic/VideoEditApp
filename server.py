@@ -141,13 +141,15 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
     }
     output_ext = ext_map.get(operation, '.mp4')
 
-    output_path = os.path.join(PROCESSED_DIR, f"processed_{uuid.uuid4()}{output_ext}")
+    #output_path = os.path.join(PROCESSED_DIR, f"processed_{uuid.uuid4()}{output_ext}")
+
+    output_path = PROCESSED_DIR
 
     if operation == 'compress':
         (
             ffmpeg
             .input(input_path)
-            .output(output_path, video_bitrate='500k')
+            .output(output_path, format='mp4', video_bitrate='500k')
             .run(cmd='/usr/bin/ffmpeg', overwrite_output=True)
         )
     elif operation == 'change_resolution':
@@ -157,7 +159,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             ffmpeg
             .input(input_path)
             .filter('scale', width, height)
-            .output(output_path)
+            .output(output_path, format='mp4')
             .run(overwrite_output=True)
         )
     elif operation == 'change_aspect_ratio':
@@ -168,7 +170,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             .input(input_path)
             .filter('setsar', '1')
             .filter('setdar', aspect_ratio)
-            .output(output_path)
+            .output(output_path, format='mp4')
             .run(overwrite_output=True)
         )
     elif operation == 'extract_audio':
