@@ -71,9 +71,18 @@
       const operation = document.getElementById("operation").value;
       const width = document.getElementById("width").value;
       const height = document.getElementById("height").value;
-      const aspect_ratio = document.getElementById("aspect_ratio").value;
+      let aspect_ratio = document.getElementById("aspect_ratio").value;
       const start_time = document.getElementById("start_time").value;
       const duration = document.getElementById("duration").value;
+
+      if (operation === "change_aspect_ratio") {
+        const aspectRegex = /^\d+:\d+$/;
+        if (!aspectRegex.test(aspect_ratio)) {
+          alert("アスペクト比は '幅:高さ' の形式で入力してください（例: 16:9）。");
+          statusEl.textContent = "アスペクト比の形式が正しくありません。";
+          return;
+        }
+      }
 
       const fileInput = document.getElementById("fileInput");
       if (!fileInput.files.length) {
