@@ -133,16 +133,15 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
     ffmpegを用いて、operationに応じた処理を行う。
     成功したら output_path を返す
     """
-    # 拡張子のマッピング
     ext_map = {
-        'extract_audio': '.mp3',
-        'create_gif': '.gif',
-        'create_webm': '.webm',
+    'extract_audio': '.mp3',
+    'create_gif': '.gif',
+    'create_webm': '.webm',
     }
     output_ext = ext_map.get(operation, '.mp4')
-
-    #output_path = os.path.join(PROCESSED_DIR, f"processed_{uuid.uuid4()}{output_ext}")
-
+    # "processed_{uuid}.ext" の形でファイル名を作成
+    output_filename = f"processed_{uuid.uuid4()}{output_ext}"
+    output_path = os.path.join(PROCESSED_DIR, output_filename)
     output_path = PROCESSED_DIR
 
     if operation == 'compress':
