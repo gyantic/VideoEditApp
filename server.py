@@ -4,6 +4,7 @@ import logging
 import ffmpeg
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
+import re
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
@@ -143,6 +144,20 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
     output_filename = f"processed_{uuid.uuid4()}{output_ext}"
     output_path = os.path.join(PROCESSED_DIR, output_filename)
 
+     # aspect_ratio の値をログに記録
+    logging.info(f"Operation: {operation}, aspect_ratio before sanitization: '{aspect_ratio}'")
+
+    '''
+    # バックスラッシュを除去（もしあれば）
+    if aspect_ratio:
+        aspect_ratio = aspect_ratio.replace('\\', '').strip()
+        logging.info(f"Aspect ratio after sanitization: '{aspect_ratio}'")
+        # 正しい形式か検証
+        if not re.match(r'^\d+:\d+$', aspect_ratio):
+            raise ValueError('aspect_ratio must be in "width:height" format, e.g., "16:9"')
+    '''
+
+
     if operation == 'compress':
         (
             ffmpeg
@@ -169,14 +184,14 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             .filter('setsar', '1')
             .filter('setdar', aspect_ratio)
             .output(output_path, format='mp4')
-            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True, capture_stdout=True, capture_stderr=True)
         )
     elif operation == 'extract_audio':
         (
             ffmpeg
             .input(input_path)
             .output(output_path, format='mp3', acodec='libmp3lame', ab='192k')
-            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True, capture_stdout=True, capture_stderr=True)
         )
     elif operation == 'create_gif':
         if start_time is None or duration is None:
@@ -185,7 +200,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             ffmpeg
             .input(input_path, ss=start_time, t=duration)
             .output(output_path, format='gif' ,vf='fps=10,scale=320:-1:flags=lanczos')
-            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True, capture_stdout=True, capture_stderr=True)
         )
     elif operation == 'create_webm':
         if start_time is None or duration is None:
@@ -194,7 +209,7 @@ def process_video(input_path, operation, width=None, height=None, aspect_ratio=N
             ffmpeg
             .input(input_path, ss=start_time, t=duration)
             .output(output_path, format='webm')
-            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True)
+            .run(cmd='/usr/bin/ffmpeg',overwrite_output=True,capture_stdout=True, capture_stderr=True)
         )
     else:
         raise ValueError('Unsupported operation')
